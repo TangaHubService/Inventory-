@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import QRCode from 'qrcode';
 
 interface CartItem {
     product: {
@@ -38,6 +39,7 @@ interface ThermalReceiptProps {
     receiptSignature?: string;
     mrcNumber?: string;
     footerMessage?: string;
+    qrPayload?: string;
 }
 
 const formatCurrency = (amount: number | string): string => {
@@ -69,10 +71,30 @@ const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
     receiptSignature = '',
     mrcNumber = '',
     footerMessage = 'COME BACK AGAIN',
+    qrPayload,
 }) => {
     const totalItems = itemCount || cart.reduce((sum, item) => sum + item.quantity, 0);
+    const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
 
-    return (
+    useEffect(() => {
+        const generateQr = async () => {
+            if (qrPayload) {
+                try {
+                    const url = await QRCode.toDataURL(qrPayload, {
+                        width: 100,
+                        margin: 1,
+                        color: { dark: '#000000', light: '#ffffff' },
+                    });
+                    setQrCodeUrl(url);
+                } catch (err) {
+                    console.error('QR generation failed:', err);
+                }
+            }
+        };
+        generateQr();
+    }, [qrPayload]);
+
+return (
         <div className="thermal-receipt" id="thermal-receipt">
             <style>{`
                 .thermal-receipt {
@@ -113,10 +135,6 @@ const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
                 .thermal-receipt .item-price {
                     font-size: 10px;
                 }
-                .thermal-receipt .item-total {
-                    text-align: right;
-                    font-weight: bold;
-                }
                 .thermal-receipt .discount {
                     color: #666;
                     font-size: 10px;
@@ -139,13 +157,11 @@ const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
                     text-align: center;
                     font-size: 10px;
                 }
-                @media print {
-                    .thermal-receipt {
-                        width: 58mm;
-                        padding: 2mm;
-                        font-size: 10px;
-                    }
+                .thermal-receipt .qr-section {
+                    text-align: center;
+                    margin: 10px 0;
                 }
+                @media print { .thermal-receipt { width: 58mm; padding: 2mm; font-size: 10px; } }
             `}</style>
 
             {/* Header */}
@@ -277,6 +293,13 @@ const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
                 <div className="total-row">
                     <span>MRC:</span>
                     <span>{mrcNumber}</span>
+                </div>
+            )}
+
+            {qrCodeUrl && (
+                <div className="qr-section">
+                    <img src={qrCodeUrl} alt="QR Code" style={{ width: '80px', height: '80px', margin: '10px auto' }} />
+                    <div className="text-center" style={{ fontSize: '9px', textAlign: 'center' }}>Scan to verify</div>
                 </div>
             )}
 
