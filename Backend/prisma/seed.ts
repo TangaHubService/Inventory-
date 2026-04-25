@@ -781,6 +781,24 @@ async function seedDemoDataset() {
     isProforma: true,
   })
 
+  // Create additional sample sales for demo purposes
+  for (let i = 0; i < 15; i++) {
+    await createSaleInTransaction(ctx, {
+      saleNumber: `SEED-SALE-DEMO-${Date.now()}-${i}`,
+      customerId: walkIn.id,
+      userId: sellerUser.id,
+      branchId: i % 2 === 0 ? mainBranch.id : eastBranch.id,
+      paymentType: SalePaymentType.CASH,
+      cashAmount: (150 * 2 + 800) * (1 + i * 0.1),
+      insuranceAmount: 0,
+      debtAmount: 0,
+      items: [
+        { productId: p1.id, quantity: 2 + i, unitPrice: 150 },
+        { productId: p2.id, quantity: 1, unitPrice: 800 },
+      ],
+    })
+  }
+
   await prisma.ebmTransaction.create({
     data: {
       organizationId: org.id,
