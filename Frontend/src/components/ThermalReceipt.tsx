@@ -1,31 +1,51 @@
 import React from 'react';
-import type { CartItem } from '../pages/dashboard/sales/pos';
 
-interface ReceiptProps {
+interface CartItem {
+    product: {
+        name: string;
+        batchNumber?: string;
+    };
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    taxRate?: number | string;
+    taxAmount?: number | string;
+    taxCode?: string;
+    discount?: number;
+}
+
+interface ThermalReceiptProps {
     cart: CartItem[];
     total: number;
     paymentMethod: string;
     receiptNumber: string;
     date: string;
     time?: string;
-    customer: { name: string; phone: string; id?: string; TIN?: string };
+    customer: { name: string; phone: string; TIN?: string; id?: string };
     payed: number;
+    businessName?: string;
+    businessAddress?: string;
+    businessTin?: string;
+    welcomeMessage?: string;
     taxExemptTotal?: number;
     taxBTotal?: number;
     taxBTax?: number;
     totalTax?: number;
+    itemCount?: number;
     sdcId?: string;
     sdcReceiptNumber?: string;
     internalData?: string;
     receiptSignature?: string;
     mrcNumber?: string;
+    footerMessage?: string;
 }
 
-const formatCurrency = (amount: number): string => {
-    return amount.toFixed(2);
+const formatCurrency = (amount: number | string): string => {
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return num.toFixed(2);
 };
 
-const Receipt: React.FC<ReceiptProps> = ({
+const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
     cart,
     total,
     paymentMethod,
@@ -34,20 +54,26 @@ const Receipt: React.FC<ReceiptProps> = ({
     time,
     customer,
     payed,
+    businessName = 'Your Business',
+    businessAddress = '',
+    businessTin = '',
+    welcomeMessage = 'Welcome to our shop',
     taxExemptTotal = 0,
     taxBTotal = 0,
     taxBTax = 0,
     totalTax = 0,
+    itemCount,
     sdcId = '',
     sdcReceiptNumber = '',
     internalData = '',
     receiptSignature = '',
     mrcNumber = '',
+    footerMessage = 'COME BACK AGAIN',
 }) => {
-    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const totalItems = itemCount || cart.reduce((sum, item) => sum + item.quantity, 0);
 
     return (
-        <div className="thermal-receipt" id="receipt">
+        <div className="thermal-receipt" id="thermal-receipt">
             <style>{`
                 .thermal-receipt {
                     width: 300px;
@@ -59,46 +85,103 @@ const Receipt: React.FC<ReceiptProps> = ({
                     margin: 0 auto;
                     color: #000;
                 }
-                .thermal-receipt .header { text-align: center; margin-bottom: 8px; }
-                .thermal-receipt .business-name { font-size: 13px; font-weight: bold; }
-                .thermal-receipt .business-info { font-size: 10px; }
-                .thermal-receipt .divider { border-bottom: 1px dashed #333; margin: 6px 0; }
-                .thermal-receipt .divider-dotted { border-bottom: 1px dotted #666; margin: 4px 0; }
-                .thermal-receipt .item-row { margin-bottom: 4px; }
-                .thermal-receipt .item-name { font-weight: bold; }
-                .thermal-receipt .item-price { font-size: 10px; }
-                .thermal-receipt .discount { color: #666; font-size: 10px; }
-                .thermal-receipt .total-row { display: flex; justify-content: space-between; }
-                .thermal-receipt .grand-total { font-weight: bold; font-size: 13px; border-top: 2px solid #000; padding-top: 2px; margin-top: 2px; }
-                .thermal-receipt .fiscal-section { font-size: 10px; }
-                .thermal-receipt .footer { text-align: center; font-size: 10px; }
-                @media print { .thermal-receipt { width: 58mm; padding: 2mm; font-size: 10px; } }
+                .thermal-receipt .header {
+                    text-align: center;
+                    margin-bottom: 8px;
+                }
+                .thermal-receipt .business-name {
+                    font-size: 13px;
+                    font-weight: bold;
+                }
+                .thermal-receipt .business-info {
+                    font-size: 10px;
+                }
+                .thermal-receipt .divider {
+                    border-bottom: 1px dashed #333;
+                    margin: 6px 0;
+                }
+                .thermal-receipt .divider-dotted {
+                    border-bottom: 1px dotted #666;
+                    margin: 4px 0;
+                }
+                .thermal-receipt .item-row {
+                    margin-bottom: 4px;
+                }
+                .thermal-receipt .item-name {
+                    font-weight: bold;
+                }
+                .thermal-receipt .item-price {
+                    font-size: 10px;
+                }
+                .thermal-receipt .item-total {
+                    text-align: right;
+                    font-weight: bold;
+                }
+                .thermal-receipt .discount {
+                    color: #666;
+                    font-size: 10px;
+                }
+                .thermal-receipt .total-row {
+                    display: flex;
+                    justify-content: space-between;
+                }
+                .thermal-receipt .grand-total {
+                    font-weight: bold;
+                    font-size: 13px;
+                    border-top: 2px solid #000;
+                    padding-top: 2px;
+                    margin-top: 2px;
+                }
+                .thermal-receipt .fiscal-section {
+                    font-size: 10px;
+                }
+                .thermal-receipt .footer {
+                    text-align: center;
+                    font-size: 10px;
+                }
+                @media print {
+                    .thermal-receipt {
+                        width: 58mm;
+                        padding: 2mm;
+                        font-size: 10px;
+                    }
+                }
             `}</style>
 
+            {/* Header */}
             <div className="header">
-                <div className="business-name">YOUR BUSINESS</div>
+                <div className="business-name">{businessName}</div>
+                {businessAddress && <div className="business-info">{businessAddress}</div>}
+                {businessTin && <div className="business-info">TIN: {businessTin}</div>}
             </div>
 
             <div className="divider" />
 
+            {/* Welcome & Client */}
             <div>
-                <div>Welcome to our shop</div>
+                {welcomeMessage && <div>{welcomeMessage}</div>}
                 {customer?.id && <div>Client ID: {customer.id}</div>}
             </div>
 
             <div className="divider" />
 
+            {/* Items */}
             {cart.map((item, index) => (
                 <div key={index} className="item-row">
                     <div className="item-name">{item.product.name}</div>
                     <div className="item-price">
-                        {formatCurrency(item.unitPrice)}x {item.quantity.toFixed(2)} {formatCurrency(item.quantity * item.unitPrice)}A-EX
+                        {formatCurrency(item.unitPrice)}x {item.quantity.toFixed(2)} {formatCurrency(item.totalPrice)}
+                        {item.taxCode ? item.taxCode : 'A-EX'}
+                        {item.discount && item.discount > 0 && (
+                            <span className="discount"> discount -{Math.round(item.discount / item.totalPrice * 100)}% {formatCurrency(item.discount)}</span>
+                        )}
                     </div>
                 </div>
             ))}
 
             <div className="divider-dotted" />
 
+            {/* Totals */}
             <div className="total-row">
                 <span>TOTAL</span>
                 <span className="grand-total">{formatCurrency(total)}</span>
@@ -122,6 +205,7 @@ const Receipt: React.FC<ReceiptProps> = ({
 
             <div className="divider" />
 
+            {/* Payment */}
             <div className="total-row">
                 <span>{paymentMethod.toUpperCase()}</span>
                 <span>{formatCurrency(payed)}</span>
@@ -133,6 +217,7 @@ const Receipt: React.FC<ReceiptProps> = ({
 
             <div className="divider" />
 
+            {/* SDC Information */}
             <div className="fiscal-section">
                 <div className="header">SDC INFORMATION</div>
                 <div className="total-row">
@@ -158,11 +243,11 @@ const Receipt: React.FC<ReceiptProps> = ({
                     </div>
                 )}
                 {internalData && (
-                    <div>
-                        <div>Internal Data:</div>
-                        <div>{internalData}</div>
+                    <div className="total-row">
+                        <span>Internal Data:</span>
                     </div>
                 )}
+                {internalData && <div>{internalData}</div>}
                 {receiptSignature && (
                     <div>
                         <div>Receipt Signature:</div>
@@ -173,6 +258,7 @@ const Receipt: React.FC<ReceiptProps> = ({
 
             <div className="divider" />
 
+            {/* Receipt Number */}
             <div className="total-row">
                 <span>RECEIPT NUMBER:</span>
                 <span>{receiptNumber}</span>
@@ -196,12 +282,13 @@ const Receipt: React.FC<ReceiptProps> = ({
 
             <div className="divider" />
 
+            {/* Footer */}
             <div className="footer">
                 <div>THANK YOU</div>
-                <div>COME BACK AGAIN</div>
+                <div>{footerMessage}</div>
             </div>
         </div>
     );
 };
 
-export default Receipt;
+export default ThermalReceipt;

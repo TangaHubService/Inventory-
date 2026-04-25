@@ -100,14 +100,13 @@ export function buildBranchFilter(req: BranchAuthRequest) {
  * Write operations (create, update) require a specific branch ID
  */
 export function getBranchIdForOperation(req: BranchAuthRequest): number {
-    // For write operations, we need a specific branch ID
     const branchId = req.selectedBranchId ||
         req.body?.branchId ||
         req.params?.branchId ||
         req.query?.branchId;
 
     if (!branchId) {
-        throw new Error('Branch ID is required for this operation');
+        return 0;
     }
 
     return typeof branchId === 'string' ? parseInt(branchId) : branchId;

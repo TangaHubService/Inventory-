@@ -3,6 +3,9 @@ import type { Product, PrismaClient } from "@prisma/client"
 import { TaxCategory } from "@prisma/client"
 import type { BranchAuthRequest } from "../middleware/branchAuth.middleware"
 import { buildBranchFilter } from "../middleware/branchAuth.middleware"
+import { normalizeOptionalText } from "../shared/utils/text"
+import { buildPagination, buildSearchFilter } from "../shared/utils/query"
+import { getCategoryFiscalConfig, generateItemCode } from "../config/category-fiscal"
 import {
   adjustStock as ledgerAdjustStock,
   removeStock as ledgerRemoveStock,
@@ -18,15 +21,6 @@ export interface ProductFilterParams {
   expiryStatus?: string
   limit?: number
   page?: number
-}
-
-const normalizeOptionalText = (value: unknown): string | null => {
-  if (typeof value !== "string") {
-    return null
-  }
-
-  const trimmed = value.trim()
-  return trimmed.length > 0 ? trimmed : null
 }
 
 export const getProducts = async (params: ProductFilterParams) => {
@@ -98,7 +92,7 @@ export const getProducts = async (params: ProductFilterParams) => {
         where: {
           productId: product.id,
           organizationId,
-          ...(branchId != null ? { branchId } : {}),
+          branchId: branchId ?? undefined,
         },
       })
 
@@ -169,10 +163,6 @@ export const getProductById = async (id: number, organizationId: number) => {
 export interface CreateProductInput {
   name: string
   sku?: string
-  itemCode?: string
-  itemClassCode?: string
-  packageUnitCode?: string
-  quantityUnitCode?: string
   batchNumber: string
   quantity: number
   unitPrice: number
@@ -181,8 +171,8 @@ export interface CreateProductInput {
   category: string
   description?: string
   minStock?: number
-  taxCategory?: TaxCategory
   barcode?: string
+  unitOfMeasure?: string
 }
 
 export const createProduct = async (
@@ -195,15 +185,19 @@ export const createProduct = async (
     throw new Error("Expiry date cannot be in the past")
   }
 
+  const fiscalConfig = getCategoryFiscalConfig(input.category)
+  const itemCode = generateItemCode(organizationId)
+
   return await prisma.$transaction(async (tx) => {
     const product = await tx.product.create({
       data: {
         name: input.name,
         sku: normalizeOptionalText(input.sku),
-        itemCode: normalizeOptionalText(input.itemCode),
-        itemClassCode: normalizeOptionalText(input.itemClassCode),
-        packageUnitCode: normalizeOptionalText(input.packageUnitCode),
-        quantityUnitCode: normalizeOptionalText(input.quantityUnitCode),
+        itemCode: itemCode,
+        itemClassCode: fiscalConfig.itemClsCd,
+        taxTyCd: fiscalConfig.taxTyCd,
+        packageUnitCode: fiscalConfig.pkgUnitCd,
+        quantityUnitCode: input.unitOfMeasure || fiscalConfig.qtyUnitCd,
         batchNumber: input.batchNumber,
         quantity: input.quantity,
         unitPrice: input.unitPrice,
@@ -212,7 +206,7 @@ export const createProduct = async (
         description: input.description,
         imageUrl: input.imageUrl,
         minStock: input.minStock || 10,
-        taxCategory: input.taxCategory,
+        taxCategory: fiscalConfig.taxTyCd === 'A' ? 'EXEMPT' : 'STANDARD',
         barcode: normalizeOptionalText(input.barcode),
         organizationId,
       },
@@ -275,25 +269,29 @@ export const createProducts = async (
 
   return await prisma.$transaction(async (tx) => {
     await tx.product.createMany({
-      data: products.map((product) => ({
-        name: product.name,
-        sku: normalizeOptionalText(product.sku),
-        itemCode: normalizeOptionalText(product.itemCode),
-        itemClassCode: normalizeOptionalText(product.itemClassCode),
-        packageUnitCode: normalizeOptionalText(product.packageUnitCode),
-        quantityUnitCode: normalizeOptionalText(product.quantityUnitCode),
-        batchNumber: product.batchNumber,
-        quantity: product.quantity,
-        unitPrice: product.unitPrice,
-        category: product.category,
-        description: product.description,
-        imageUrl: product.imageUrl,
-        minStock: product.minStock,
-        taxCategory: product.taxCategory,
-        barcode: normalizeOptionalText(product.barcode),
-        organizationId,
-        expiryDate: product.expiryDate ? new Date(product.expiryDate) : null,
-      })),
+      data: products.map((product, index) => {
+        const fiscalConfig = getCategoryFiscalConfig(product.category)
+        return {
+          name: product.name,
+          sku: normalizeOptionalText(product.sku),
+          itemCode: generateItemCode(organizationId) + `-${index}`,
+          itemClassCode: fiscalConfig.itemClsCd,
+          taxTyCd: fiscalConfig.taxTyCd,
+          packageUnitCode: fiscalConfig.pkgUnitCd,
+          quantityUnitCode: product.unitOfMeasure || fiscalConfig.qtyUnitCd,
+          batchNumber: product.batchNumber,
+          quantity: product.quantity,
+          unitPrice: product.unitPrice,
+          category: product.category,
+          description: product.description,
+          imageUrl: product.imageUrl,
+          minStock: product.minStock,
+          taxCategory: fiscalConfig.taxTyCd === 'A' ? 'EXEMPT' : 'STANDARD',
+          barcode: normalizeOptionalText(product.barcode),
+          organizationId,
+          expiryDate: product.expiryDate ? new Date(product.expiryDate) : null,
+        }
+      }),
     })
 
     const createdProducts = await tx.product.findMany({
@@ -368,18 +366,6 @@ export const updateProduct = async (
 
   if (updateData.sku !== undefined) {
     normalizedData.sku = normalizeOptionalText(updateData.sku)
-  }
-  if (updateData.itemCode !== undefined) {
-    normalizedData.itemCode = normalizeOptionalText(updateData.itemCode)
-  }
-  if (updateData.itemClassCode !== undefined) {
-    normalizedData.itemClassCode = normalizeOptionalText(updateData.itemClassCode)
-  }
-  if (updateData.packageUnitCode !== undefined) {
-    normalizedData.packageUnitCode = normalizeOptionalText(updateData.packageUnitCode)
-  }
-  if (updateData.quantityUnitCode !== undefined) {
-    normalizedData.quantityUnitCode = normalizeOptionalText(updateData.quantityUnitCode)
   }
   if (updateData.barcode !== undefined) {
     normalizedData.barcode = normalizeOptionalText(updateData.barcode)
@@ -595,6 +581,43 @@ export const getLowStockProducts = async (params: LowStockFilterParams) => {
   }
 }
 
+export const getLowStockProductsCount = async (organizationId: number, branchId?: number) => {
+  const baselineProduct = await prisma.product.findFirst({
+    where: {
+      organizationId,
+      deletedAt: null,
+    },
+    select: { minStock: true },
+  })
+  const baseMinStock = baselineProduct?.minStock || 10
+
+  const where: any = {
+    organizationId,
+    deletedAt: null,
+    quantity: { lte: baseMinStock },
+  }
+
+  if (branchId) {
+    where.batches = { some: { branchId } }
+  }
+
+  return prisma.product.count({ where })
+}
+
+export const getExpiredProductsCount = async (organizationId: number, branchId?: number) => {
+  const where: any = {
+    organizationId,
+    deletedAt: null,
+    expiryDate: { not: null, lt: new Date() },
+  }
+
+  if (branchId) {
+    where.batches = { some: { branchId } }
+  }
+
+  return prisma.product.count({ where })
+}
+
 export const adjustStock = async (
   productId: number,
   organizationId: number,
@@ -697,6 +720,8 @@ export const InventoryService = {
   getExpiringProducts,
   getExpiredProducts,
   getLowStockProducts,
+  getLowStockProductsCount,
+  getExpiredProductsCount,
   adjustStock,
   markAsDamage,
   processExpiredStock,

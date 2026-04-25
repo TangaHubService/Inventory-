@@ -960,6 +960,9 @@ const SalesInvoicePDF: React.FC<SalesInvoicePDFProps> = ({
                         <Text style={styles.footerText}>
                             Keep this receipt for audit, refund, cancellation, or verification reference.
                         </Text>
+                        <Text style={{ ...styles.footerText, color: '#666', marginTop: 8 }}>
+                            Powered by Excledge
+                        </Text>
                     </View>
                 </View>
             </Page>

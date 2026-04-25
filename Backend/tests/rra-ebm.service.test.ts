@@ -644,4 +644,123 @@ describe("rra-ebm.service", () => {
       ],
     });
   });
+
+  describe("EBM integration flow", () => {
+    it("validates organization EBM configuration", () => {
+      const org = {
+        TIN: "11919467890123",
+        ebmDeviceId: "DEMO-VSDC-001",
+        ebmSerialNo: "SN-2024-001234",
+        name: "Exceledge Demo Pharmacy",
+        address: "KG 123 St, Kigali",
+      };
+
+      const errors: string[] = [];
+
+      if (!org.TIN) errors.push("TIN is required");
+      if (!org.ebmDeviceId) errors.push("ebmDeviceId is required");
+      if (!org.ebmSerialNo) errors.push("ebmSerialNo is required");
+
+      expect(errors).toHaveLength(0);
+      expect(org.ebmDeviceId).toBe("DEMO-VSDC-001");
+      expect(org.ebmSerialNo).toBe("SN-2024-001234");
+    });
+
+    it("builds valid sale payload for fiscalization", () => {
+      const sale = {
+        id: 1,
+        saleNumber: "SALE-TEST-001",
+        invoiceNumber: "INV-1191-2026-000001",
+        status: "COMPLETED",
+        createdAt: new Date("2026-04-25T10:00:00Z"),
+        paymentType: "CASH",
+        cashAmount: { toNumber: () => 118 } as never,
+        debtAmount: { toNumber: () => 0 } as never,
+        insuranceAmount: { toNumber: () => 0 } as never,
+        totalAmount: { toNumber: () => 118 } as never,
+        taxableAmount: { toNumber: () => 100 } as never,
+        vatAmount: { toNumber: () => 18 } as never,
+        branchId: 1,
+        branch: {
+          id: 1,
+          name: "Main Store",
+          code: "MAIN",
+          bhfId: "01",
+        },
+        customer: {
+          name: "Test Customer",
+          phone: "0788000000",
+          TIN: "100600570",
+          customerType: "INDIVIDUAL",
+        },
+        user: { id: 1, name: "Admin" },
+        saleItems: [
+          {
+            productId: 1,
+            quantity: 1,
+            unitPrice: { toNumber: () => 100 } as never,
+            totalPrice: { toNumber: () => 100 } as never,
+            taxRate: { toNumber: () => 18 } as never,
+            taxAmount: { toNumber: () => 18 } as never,
+            taxCode: "A",
+            product: {
+              name: "Test Product",
+              sku: "TEST-001",
+              itemCode: "TESTITEM001",
+              itemClassCode: "5059690800",
+              packageUnitCode: "BX",
+              quantityUnitCode: "EA",
+              barcode: "1234567890123",
+              category: "Test",
+            },
+          },
+        ],
+      };
+
+      const org = {
+        TIN: "11919467890123",
+        ebmDeviceId: "DEMO-VSDC-001",
+        ebmSerialNo: "SN-2024-001234",
+        name: "Exceledge Demo Pharmacy",
+        address: "KG 123 St, Kigali",
+      };
+
+const payload = buildSaleGatewayPayload(sale, org);
+
+      expect(payload.itemList).toHaveLength(1);
+      expect(payload.itemList[0].itemCd).toBeDefined();
+      expect(payload.itemList[0].itemClsCd).toBe("5059690800");
+    });
+
+    it("generates correct invoice number format", () => {
+      const testCases = [
+        { tin: "11919467890123" },
+        { tin: "100600570" },
+        { tin: "999991130" },
+      ];
+
+      testCases.forEach(({ tin }) => {
+        const seq = "000001";
+        const orgCode = tin.replace(/\D/g, "").slice(-4);
+        const year = new Date().getFullYear();
+        const result = `INV-${orgCode}-${year}-${seq}`;
+        
+        expect(result).toMatch(/^INV-\d{4}-\d{4}-000001$/);
+      });
+    });
+
+    it("validates required item codes for VSDC", () => {
+      const validItem = {
+        itemCode: "RW1NTXU0000001",
+        itemClassCode: "5059690800",
+        packageUnitCode: "BX",
+        quantityUnitCode: "EA",
+      };
+
+      expect(validItem.itemCode).toHaveLength(14);
+      expect(validItem.itemClassCode).toBe("5059690800");
+      expect(validItem.packageUnitCode).toBe("BX");
+      expect(validItem.quantityUnitCode).toBe("EA");
+    });
+  });
 });

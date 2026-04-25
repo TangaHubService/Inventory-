@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { SubscriptionAlert } from "../components/SubscriptionAlert";
+import QuickActionsFab from "../components/QuickActionsFab";
 import { useOrganization } from "../context/OrganizationContext";
 import { useAuth } from "../context/AuthContext";
 import { ToastContainer } from "react-toastify";
@@ -58,6 +59,7 @@ export function DashboardLayout() {
                         subscriptionEndDate={organization?.subscriptionEndDate}
                     />
                     <Outlet />
+                    <QuickActionsFab />
                 </main>
             </div>
         </div>

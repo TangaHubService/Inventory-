@@ -68,6 +68,9 @@ export const StockReports = () => {
     // Pagination for report tab
     const [reportCurrentPage, setReportCurrentPage] = useState(1);
     const [reportItemsPerPage, setReportItemsPerPage] = useState(10);
+    
+    // Safe data access
+    const safeReportData = Array.isArray(reportData) ? reportData : [];
 
     useEffect(() => {
         fetchData();
@@ -83,7 +86,8 @@ export const StockReports = () => {
                     startDate,
                     endDate,
                 });
-                setReportData(data.data);
+                // Ensure data is an array
+                setReportData(Array.isArray(data.data) ? data.data : []);
                 setSummary(data.summary);
             } else {
                 const data = await apiClient.getStockHistory({
@@ -94,7 +98,7 @@ export const StockReports = () => {
                     limit: 20
                 });
                 console.log('Stock History Response:', data); // Debug
-                setHistoryData(data.data || []);
+                setHistoryData(Array.isArray(data.data) ? data.data : []);
                 const paginationData = {
                     currentPage: data.pagination?.currentPage || 1,
                     totalPages: data.pagination?.totalPages || 1,
@@ -129,7 +133,7 @@ export const StockReports = () => {
 
     const handleExportExcel = () => {
         if (activeTab === 'report') {
-            const data = reportData.map(item => ({
+            const data = safeReportData.map(item => ({
                 'Product Name': item.productName,
                 'Batch Number': item.batchNumber || 'N/A',
                 'Opening Stock': item.openingStock,
@@ -184,7 +188,7 @@ export const StockReports = () => {
                     { header: 'Closing', key: 'closing' },
                     { header: 'Value', key: 'value' }
                 ];
-                body = reportData.map(item => [
+                body = safeReportData.map(item => [
                     item.productName,
                     item.batchNumber || 'N/A',
                     item.openingStock,
@@ -230,9 +234,9 @@ export const StockReports = () => {
         }
     };
 
-    const filteredReport = reportData.filter(item =>
-        item.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.batchNumber.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredReport = safeReportData.filter(item =>
+        (item.productName || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+        (item.batchNumber || '').toLowerCase().includes((searchQuery || '').toLowerCase())
     );
 
     // Paginate filtered report

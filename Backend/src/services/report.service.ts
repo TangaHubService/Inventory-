@@ -183,7 +183,7 @@ export const getSalesReport = async (params: SalesReportParams) => {
 export const getInventoryReport = async (params: InventoryReportParams) => {
   const { organizationId, branchId, category, status, search } = params
 
-  const where: any = { organizationId, ...(branchId ? { branchId } : {}) }
+  const where: any = { organizationId }
 
   if (category && category !== 'all') {
     where.category = category

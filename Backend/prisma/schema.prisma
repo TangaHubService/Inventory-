@@ -331,6 +331,7 @@ model Product {
   sku                String?
   itemCode           String?             @map("item_code")
   itemClassCode      String?             @map("item_class_code")
+  taxTyCd            String?             @map("tax_ty_cd")
   packageUnitCode    String?             @map("package_unit_code")
   quantityUnitCode   String?             @map("quantity_unit_code")
   batchNumber        String?
@@ -1021,6 +1022,8 @@ enum ActivityType {
   EXPENSE_CREATE
   EXPENSE_UPDATE
   EXPENSE_DELETE
+  ORGANIZATION_UPDATE
+  VSDC_SYNC
 }
 
 enum SalePaymentType {

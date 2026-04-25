@@ -1,6 +1,15 @@
 import dotenv from "dotenv"
+import { CategoryFiscalConfig, DEFAULT_CATEGORY_FISCAL_MAPPING, getCategoryFiscalConfig, generateItemCode, getAvailableCategories } from "./category-fiscal"
 
 dotenv.config()
+
+export { 
+  CategoryFiscalConfig, 
+  DEFAULT_CATEGORY_FISCAL_MAPPING, 
+  getCategoryFiscalConfig, 
+  generateItemCode, 
+  getAvailableCategories 
+}
 
 export const config = {
   appName: process.env.APP_NAME || "Exceldge-ERP",

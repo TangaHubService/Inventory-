@@ -31,9 +31,23 @@ class ActivityLogService {
 
   async createLog(data: ActivityLogData) {
     try {
+      // Validate and normalize the activity type
+      let validType = data.type;
+      if (!validType) {
+        validType = "OTHER" as ActivityType;
+      } else {
+        // Check if the type is a valid ActivityType
+        const validTypes = Object.values(ActivityType);
+        if (!validTypes.includes(data.type as ActivityType)) {
+          console.warn(`[ActivityLogService] Unknown activity type: ${data.type}, using OTHER`);
+          validType = "OTHER" as ActivityType;
+        }
+      }
+      
       const result = await this.prisma.activityLog.create({
         data: {
           ...data,
+          type: validType,
           organizationId: data.organizationId && data.organizationId !== 0 ? data.organizationId : null,
           userId: data.userId && data.userId !== 0 ? data.userId : null,
           status: data.status || 'SUCCESS',

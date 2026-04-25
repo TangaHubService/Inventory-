@@ -8,7 +8,6 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                /* Inter: high x-height, clear 0/O/1/l — strong for dashboards & dense tables */
                 sans: [
                     'Inter',
                     'system-ui',

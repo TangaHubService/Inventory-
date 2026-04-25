@@ -321,7 +321,7 @@ async function seedDemoDataset() {
     where: { email: DEMO_ADMIN_EMAIL },
   })
   if (existing) {
-    console.log("Demo dataset already seeded (skip). Delete demo users to re-seed.")
+    console.log("Demo dataset already seeded (skip). Add EBM test sale manually or reset the database.")
     return
   }
 
@@ -340,6 +340,8 @@ async function seedDemoDataset() {
       businessType: "PHARMACY",
       currency: "RWF",
       TIN: "11919467890123",
+      ebmDeviceId: "DEMO-VSDC-001",
+      ebmSerialNo: "SN-2024-001234",
       address: "KG 123 St, Kigali",
       phone: "+250788000000",
       email: "demo.shop@exceledge.test",
@@ -524,6 +526,10 @@ async function seedDemoDataset() {
         supplierId: supplierA.id,
         name: "Paracetamol 500mg Tablets",
         sku: "PARA-500",
+        itemCode: "8901000000001",
+        itemClassCode: "3004900000",
+        packageUnitCode: "BX",
+        quantityUnitCode: "EA",
         category: "Pain relief",
         description: "Blister 20 tablets",
         quantity: 0,
@@ -539,6 +545,10 @@ async function seedDemoDataset() {
         supplierId: supplierA.id,
         name: "Amoxicillin 250mg",
         sku: "AMOX-250",
+        itemCode: "8901000000002",
+        itemClassCode: "3003390000",
+        packageUnitCode: "BX",
+        quantityUnitCode: "EA",
         category: "Antibiotics",
         quantity: 0,
         unitPrice: new Prisma.Decimal("800.00"),
@@ -553,6 +563,10 @@ async function seedDemoDataset() {
         supplierId: supplierB.id,
         name: "Vitamin C 1000mg",
         sku: "VIT-C-1K",
+        itemCode: "8901000000003",
+        itemClassCode: "2936290000",
+        packageUnitCode: "BX",
+        quantityUnitCode: "EA",
         category: "Vitamins",
         quantity: 0,
         unitPrice: new Prisma.Decimal("3500.00"),
@@ -567,6 +581,10 @@ async function seedDemoDataset() {
         supplierId: supplierB.id,
         name: "Hand Sanitizer 500ml",
         sku: "SAN-500",
+        itemCode: "8901000000004",
+        itemClassCode: "3808940000",
+        packageUnitCode: "BT",
+        quantityUnitCode: "ML",
         category: "Hygiene",
         quantity: 0,
         unitPrice: new Prisma.Decimal("2500.00"),
@@ -581,6 +599,10 @@ async function seedDemoDataset() {
         supplierId: supplierA.id,
         name: "Cotton Roll 500g",
         sku: "COT-500",
+        itemCode: "8901000000005",
+        itemClassCode: "5601210000",
+        packageUnitCode: "PK",
+        quantityUnitCode: "GR",
         category: "Supplies",
         quantity: 0,
         unitPrice: new Prisma.Decimal("4200.00"),
@@ -595,6 +617,10 @@ async function seedDemoDataset() {
         supplierId: supplierA.id,
         name: "Digital Thermometer",
         sku: "THERM-D1",
+        itemCode: "8901000000006",
+        itemClassCode: "9025110000",
+        packageUnitCode: "EA",
+        quantityUnitCode: "EA",
         category: "Devices",
         quantity: 0,
         unitPrice: new Prisma.Decimal("12000.00"),
@@ -1016,6 +1042,51 @@ async function seedDemoDataset() {
   console.log(`Purchase orders: pending #${pendingPo.id}, completed #${completedPo.id} + supplier payment`)
   console.log(`Stock: batches on MAIN + EAST; completed stock transfer id=${transferCompleted.id}`)
   console.log("-----------------------------------")
+  console.log("")
+
+  // Seed sample completed sales for EBM testing
+  console.log("Seeding sample sales for EBM testing...")
+
+  // Sale 1 - Cash sale at Main Branch
+  const sale1 = await prisma.sale.create({
+    data: {
+      saleNumber: "SALE-EBM-001",
+      invoiceNumber: "INV-1234-2026-000001",
+      organizationId: org.id,
+      branchId: mainBranch.id,
+      userId: sellerUser.id,
+      customerId: walkInCustomer.id,
+      paymentType: "CASH",
+      cashAmount: new Prisma.Decimal("5900.00"),
+      debtAmount: new Prisma.Decimal("0"),
+      insuranceAmount: new Prisma.Decimal("0"),
+      totalAmount: new Prisma.Decimal("5900.00"),
+      taxableAmount: new Prisma.Decimal("5000.00"),
+      vatAmount: new Prisma.Decimal("900.00"),
+      status: "COMPLETED",
+      saleItems: {
+        create: [
+          { productId: p1.id, quantity: 10, unitPrice: new Prisma.Decimal("150.00"), totalPrice: new Prisma.Decimal("1500.00"), taxRate: new Prisma.Decimal("18"), taxAmount: new Prisma.Decimal("270.00"), taxCode: "A" },
+          { productId: p2.id, quantity: 5, unitPrice: new Prisma.Decimal("800.00"), totalPrice: new Prisma.Decimal("4000.00"), taxRate: new Prisma.Decimal("18"), taxAmount: new Prisma.Decimal("720.00"), taxCode: "A" },
+        ],
+      },
+    },
+  })
+
+  // Remove stock for sale 1
+  await removeStock({
+    organizationId: org.id,
+    productId: p1.id,
+    userId: sellerUser.id,
+    quantity: 10,
+    movementType: "SALE",
+    branchId: mainBranch.id,
+    reference: sale1.saleNumber,
+    referenceType: "SALE",
+    note: "EBM test sale",
+  })
+
+  console.log(`✅ Created test sale: ${sale1.saleNumber} (id=${sale1.id})`)
   console.log("")
 }
 

@@ -1,5 +1,6 @@
 import { BranchStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma';
+import { normalizeOptionalTextPreserve } from '../shared/utils/text';
 
 export interface CreateBranchParams {
   organizationId: number;
@@ -22,19 +23,6 @@ export interface UpdateBranchParams {
   status?: BranchStatus;
   metadata?: any;
 }
-
-const normalizeOptionalText = (value?: string | null) => {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (value === null) {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-};
 
 /**
  * Get all branches for an organization
@@ -115,7 +103,7 @@ export async function createBranch(params: CreateBranchParams) {
       organizationId,
       name,
       code,
-      bhfId: normalizeOptionalText(bhfId),
+      bhfId: normalizeOptionalTextPreserve(bhfId),
       location,
       address,
       phone,
@@ -163,7 +151,7 @@ export async function updateBranch(
     where: { id: branchId },
     data: {
       ...data,
-      ...(data.bhfId !== undefined ? { bhfId: normalizeOptionalText(data.bhfId) } : {}),
+      ...(data.bhfId !== undefined ? { bhfId: normalizeOptionalTextPreserve(data.bhfId) } : {}),
     },
   });
 }

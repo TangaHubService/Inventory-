@@ -8,7 +8,7 @@ import { InventoryService, CreateProductInput, ProductFilterParams, LowStockFilt
 export const getProducts = async (req: BranchAuthRequest, res: Response) => {
   try {
     const organizationId = parseInt(req.params.organizationId)
-    const branchId = getBranchIdForOperation(req)
+    const branchId = req.selectedBranchId ?? 0
     const { search, category, expiryStatus, limit = "50", page = "1" } = req.query
 
     const params: ProductFilterParams = {
@@ -22,7 +22,17 @@ export const getProducts = async (req: BranchAuthRequest, res: Response) => {
     }
 
     const result = await InventoryService.getProducts(params)
-    res.json(success(result))
+
+    const [lowStockProducts, expiredProducts] = await Promise.all([
+      InventoryService.getLowStockProductsCount(organizationId, branchId),
+      InventoryService.getExpiredProductsCount(organizationId, branchId),
+    ])
+
+    res.json(success({
+      ...result,
+      lowStockProducts,
+      expiredProducts,
+    }))
   } catch (err: any) {
     console.error("[Get Products Error]:", err)
     res.status(500).json(apiError("Failed to get products"))
@@ -56,10 +66,6 @@ export const createProduct = async (req: BranchAuthRequest, res: Response) => {
     const input: CreateProductInput = {
       name: req.body.name,
       sku: req.body.sku,
-      itemCode: req.body.itemCode,
-      itemClassCode: req.body.itemClassCode,
-      packageUnitCode: req.body.packageUnitCode,
-      quantityUnitCode: req.body.quantityUnitCode,
       batchNumber: req.body.batchNumber,
       quantity: req.body.quantity,
       unitPrice: req.body.unitPrice,
@@ -68,8 +74,8 @@ export const createProduct = async (req: BranchAuthRequest, res: Response) => {
       category: req.body.category,
       description: req.body.description,
       minStock: req.body.minStock,
-      taxCategory: req.body.taxCategory,
       barcode: req.body.barcode,
+      unitOfMeasure: req.body.unitOfMeasure,
     }
 
     const result = await InventoryService.createProduct(input, organizationId, userId, branchId)

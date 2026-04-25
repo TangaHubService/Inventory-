@@ -2,6 +2,7 @@ import { prisma } from "../lib/prisma"
 import type { PrismaClient, Sale, Customer, User, Branch } from "@prisma/client"
 import { Decimal } from "@prisma/client/runtime/library"
 import { auditLogger } from "../utils/auditLogger"
+import { executeWithRetry } from "../shared/utils/retry"
 import { removeStock, addStock } from "./inventory-ledger.service"
 import {
   assertVsdcBranchMasterData,
@@ -46,23 +47,6 @@ export interface SaleFilterParams {
   search?: string
   status?: string
   paymentType?: string
-}
-
-const MAX_RETRIES = 3
-const INITIAL_RETRY_DELAY = 1000
-
-const executeWithRetry = async (fn: () => Promise<any>, retries = 0): Promise<any> => {
-  try {
-    return await fn()
-  } catch (error: any) {
-    if (error.code === 'P2028' && retries < MAX_RETRIES) {
-      const delay = INITIAL_RETRY_DELAY * Math.pow(2, retries)
-      console.log(`Transaction timed out, retrying in ${delay}ms (attempt ${retries + 1}/${MAX_RETRIES})`)
-      await new Promise(resolve => setTimeout(resolve, delay))
-      return executeWithRetry(fn, retries + 1)
-    }
-    throw error
-  }
 }
 
 export const loadSaleWithContext = async (

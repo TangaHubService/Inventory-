@@ -62,10 +62,6 @@ type ProductNameItem = {
   id: number;
   name: string;
   sku?: string;
-  itemCode?: string;
-  itemClassCode?: string;
-  packageUnitCode?: string;
-  quantityUnitCode?: string;
   expiryDate: string;
   batchNumber: string;
   category: string;
@@ -78,10 +74,6 @@ type ProductFormState = {
   batchNumber: string;
   name: string;
   sku: string;
-  itemCode: string;
-  itemClassCode: string;
-  packageUnitCode: string;
-  quantityUnitCode: string;
   quantity: number;
   unitPrice: number;
   expiryDate: string;
@@ -94,10 +86,6 @@ const createEmptyProductForm = (): ProductFormState => ({
   batchNumber: "",
   name: "",
   sku: "",
-  itemCode: "",
-  itemClassCode: "",
-  packageUnitCode: "",
-  quantityUnitCode: "",
   quantity: 0,
   unitPrice: 0,
   expiryDate: "",
@@ -122,10 +110,6 @@ const buildProductOption = (
   id: typeof source.id === "number" ? source.id : Number(source.id ?? 0),
   name: source.name ?? source.label,
   sku: source.sku ?? "",
-  itemCode: source.itemCode ?? "",
-  itemClassCode: source.itemClassCode ?? "",
-  packageUnitCode: source.packageUnitCode ?? "",
-  quantityUnitCode: source.quantityUnitCode ?? "",
   expiryDate: source.expiryDate ?? "",
   batchNumber: source.batchNumber ?? "",
   category: source.category ?? "",
@@ -140,10 +124,6 @@ const productToFormData = (
   batchNumber: product.batchNumber ?? "",
   name: product.name ?? product.label ?? "",
   sku: product.sku ?? "",
-  itemCode: product.itemCode ?? "",
-  itemClassCode: product.itemClassCode ?? "",
-  packageUnitCode: product.packageUnitCode ?? "",
-  quantityUnitCode: product.quantityUnitCode ?? "",
   quantity: typeof product.quantity === "number" ? product.quantity : 0,
   unitPrice: typeof product.unitPrice === "number" ? product.unitPrice : 0,
   expiryDate: normalizeDateForInput(product.expiryDate),
@@ -175,10 +155,6 @@ const fetchProductNames = async (query: string) => {
       id: item.id,
       name: item.name,
       sku: item.sku ?? "",
-      itemCode: item.itemCode ?? "",
-      itemClassCode: item.itemClassCode ?? "",
-      packageUnitCode: item.packageUnitCode ?? "",
-      quantityUnitCode: item.quantityUnitCode ?? "",
       category: item.category ?? "",
       expiryDate: item.expiryDate ?? "",
       batchNumber: item.batchNumber ?? "",
@@ -416,10 +392,6 @@ export const InventoryManagement = () => {
         id: product.id,
         name: product.name,
         sku: product.sku,
-        itemCode: product.itemCode,
-        itemClassCode: product.itemClassCode,
-        packageUnitCode: product.packageUnitCode,
-        quantityUnitCode: product.quantityUnitCode,
         category: product.category,
         expiryDate: product.expiryDate,
         batchNumber: product.batchNumber,
@@ -892,10 +864,6 @@ export const InventoryManagement = () => {
                             ...prev,
                             name: newValue.label,
                             sku: newValue.sku || "",
-                            itemCode: newValue.itemCode || "",
-                            itemClassCode: newValue.itemClassCode || "",
-                            packageUnitCode: newValue.packageUnitCode || "",
-                            quantityUnitCode: newValue.quantityUnitCode || "",
                             unitPrice: newValue.unitPrice || prev.unitPrice || 0,
                             minStock: newValue.minStock || prev.minStock || 0,
                             description: newValue.description || prev.description || "",
@@ -908,10 +876,6 @@ export const InventoryManagement = () => {
                             ...prev,
                             name: "",
                             sku: "",
-                            itemCode: "",
-                            itemClassCode: "",
-                            packageUnitCode: "",
-                            quantityUnitCode: "",
                             unitPrice: 0,
                             minStock: 0,
                             description: "",
@@ -929,10 +893,6 @@ export const InventoryManagement = () => {
                           ...prev,
                           name: inputValue,
                           sku: "",
-                          itemCode: "",
-                          itemClassCode: "",
-                          packageUnitCode: "",
-                          quantityUnitCode: "",
                         }));
                       }}
                       options={uniqueProductNames}
@@ -1075,69 +1035,15 @@ export const InventoryManagement = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>SKU</Label>
-                      <Input
-                        placeholder="e.g., PARA-500"
-                        value={formData.sku}
-                        onChange={(e) =>
-                          setFormData({ ...formData, sku: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>VSDC Item Code</Label>
-                      <Input
-                        placeholder="e.g., RW1NTXU0000001"
-                        value={formData.itemCode}
-                        onChange={(e) =>
-                          setFormData({ ...formData, itemCode: e.target.value })
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>VSDC Item Class Code</Label>
-                      <Input
-                        placeholder="e.g., 5059690800"
-                        value={formData.itemClassCode}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            itemClassCode: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Package Unit Code</Label>
-                      <Input
-                        placeholder="e.g., BX"
-                        value={formData.packageUnitCode}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            packageUnitCode: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Quantity Unit Code</Label>
-                      <Input
-                        placeholder="e.g., EA"
-                        value={formData.quantityUnitCode}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            quantityUnitCode: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label>SKU</Label>
+                    <Input
+                      placeholder="e.g., PARA-500"
+                      value={formData.sku}
+                      onChange={(e) =>
+                        setFormData({ ...formData, sku: e.target.value })
+                      }
+                    />
                   </div>
 
                   {/* Image Upload Input */}

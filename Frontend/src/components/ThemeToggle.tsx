@@ -12,8 +12,8 @@ export function ThemeToggle({ className }: { className?: string }) {
       size="icon"
       onClick={toggleTheme}
       className={cn(
-        'rounded-full',
-        className ?? 'text-slate-600 dark:text-slate-300',
+        'rounded-full text-white hover:bg-white/20',
+        className,
       )}
       aria-label="Toggle theme"
     >
