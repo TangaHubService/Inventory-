@@ -1077,7 +1077,7 @@ async function seedDemoDataset() {
       organizationId: org.id,
       branchId: mainBranch.id,
       userId: sellerUser.id,
-      customerId: walkInCustomer.id,
+      customerId: walkIn.id,
       paymentType: "CASH",
       cashAmount: new Prisma.Decimal("5900.00"),
       debtAmount: new Prisma.Decimal("0"),
