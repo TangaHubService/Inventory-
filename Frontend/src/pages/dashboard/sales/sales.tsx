@@ -105,13 +105,12 @@ export default function SalesPage() {
                 startDate,
                 endDate,
             });
-            const list = Array.isArray((response as { data?: unknown })?.data)
-                ? (response as { data: Sale[] }).data
-                : Array.isArray(response)
-                  ? (response as Sale[])
-                  : [];
-            setSales(list);
-            const pagination = (response as { pagination?: { totalPages?: number } })?.pagination;
+            const responseData = (response as { data?: unknown })?.data;
+            const result = responseData && typeof responseData === 'object' && 'data' in responseData 
+                ? (responseData as { data: Sale[] }).data 
+                : (responseData as Sale[]) || [];
+            setSales(result);
+            const pagination = (responseData as { pagination?: { totalPages?: number } })?.pagination;
             setTotalPages(
                 typeof pagination?.totalPages === 'number' && pagination.totalPages >= 1
                     ? pagination.totalPages
